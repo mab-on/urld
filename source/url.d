@@ -26,6 +26,8 @@ import std.encoding;
 import std.string;
 import std.utf;
 
+import libhosttokens;
+
 @safe:
 
 /// An exception thrown when something bad happens with URLs.
@@ -1321,5 +1323,35 @@ unittest {
 		auto domain = "☂.☃.com";
 		auto decodedDomain = domain.splitter(".").map!(punyEncode).join(".");
 		assert(decodedDomain == "xn--m3h.xn--n3h.com", decodedDomain);
+	}
+}
+
+/**
+* parse a URL and further the host
+*/
+unittest {
+	{
+		auto u1 = parseURL("https://lb1.www.example.co.uk/?login=true#justkidding");
+		assert(u1.scheme == "https");
+		assert(u1.host == "lb1.www.example.co.uk");
+		assert(u1.host.parseHost().paylevelDomain == "example.co.uk");
+		assert(u1.host.parseHost().tld == "co.uk");
+		assert(u1.host.parseHost().reglevels == ["co","uk"]);
+		assert(u1.host.parseHost().subdomain == "lb1.www");
+		assert(u1.host.parseHost().subdomains == ["lb1","www"]);
+		assert(u1.path == "/", "expected path: / actual path: " ~ u1.path);
+		assert(u1.queryParams["login"].front == "true");
+		assert(u1.fragment == "justkidding");
+	}
+	{
+		auto u1 = parseURL("https://127.0.0.1/?login=true#justkidding");
+		assert(u1.scheme == "https");
+		assert(u1.host == "127.0.0.1");
+		assert(u1.host.parseHost().paylevelDomain == "127.0.0.1");
+		assert(u1.host.parseHost().tld == "");
+		assert(u1.host.parseHost().subdomain == "");
+		assert(u1.path == "/", "expected path: / actual path: " ~ u1.path);
+		assert(u1.queryParams["login"].front == "true");
+		assert(u1.fragment == "justkidding");
 	}
 }
